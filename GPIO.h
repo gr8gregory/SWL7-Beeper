@@ -1,16 +1,19 @@
+/*****************************************************************************
+ * GPIO.h
+ * Contains function prototypes to initialize a GPIO port
+ * Caleb Hoeksema, Gregory Huras
+ * April 2020
+ ****************************************************************************/
+ 
+
 #ifndef _GPIO_H
 #define _GPIO_H
+
 #include "SysClock.h"
 #include "stm32l476xx.h"
+#include "utils.h"
 
-#define F_PD5_PD6 			(0xF << (2*5))	
-#define AF_PD5_PD6 			(0x77<<(4*5))
-#define MODER_PD5_PD6 	(0xA<<(2*5))
-#define OTYPER_PD5_PD6 	(0x3<<5)
-#define PUPDR_PD5_PD6 	(0x5<<(2*5))
 
-#define TIMERA_PIN 0
-#define TIMERB_PIN 6
 // Pin modes
 #define		MODER_IN		0x0UL
 #define		MODER_OUT		0x1UL
@@ -34,25 +37,26 @@
 #define		PULL_RES		0x3UL
 
 // Ports
-#define		PORT_B			RCC_AHB2ENR_GPIOBEN
 #define		PORT_A			RCC_AHB2ENR_GPIOAEN
-#define 	PORT_E			RCC_AHB2ENR_GPIOEEN
+#define		PORT_E			RCC_AHB2ENR_GPIOEEN
 
-// Masks
-#define		GPIOA_MASK	0x2E
+// GPIOA macros
+#define		GPIOA_PIN_MODE(pin, mode)				FORCE_BITS(GPIOA->MODER, 3UL << ((pin)*2UL), (mode) << ((pin)*2UL))
+#define 	GPIOA_PIN_DRV_TYPE(pin, type)		FORCE_BITS(GPIOA->ODR, 1 << (pin), (type) << (pin))
+#define		GPIOA_OP_TYPE(pin, mode)				FORCE_BITS(GPIOA->OTYPER, 1UL << (pin), (mode) << (pin))
+#define		GPIOA_PIN_SPEED(pin, speed)			FORCE_BITS(GPIOA->OSPEEDR, 3UL << (2*(pin)), (speed) << (2*(pin)))
+#define		GPIOA_PIN_PULL(pin, pull)				FORCE_BITS(GPIOA->PUPDR, 3UL << (2*(pin)), (pull) << (2*(pin)))
 
-// GPIOE MACROS
-#define 	GPIOE_PIN_DRV_TYPE(pin, type)		FORCE_BITS(GPIOE->ODR, 1 << (pin), (type) << (pin))
+// GPIOE macros
 #define		GPIOE_PIN_MODE(pin, mode)				FORCE_BITS(GPIOE->MODER, 3UL << ((pin)*2UL), (mode) << ((pin)*2UL))
+#define 	GPIOE_PIN_DRV_TYPE(pin, type)		FORCE_BITS(GPIOE->ODR, 1 << (pin), (type) << (pin))
 #define		GPIOE_OP_TYPE(pin, mode)				FORCE_BITS(GPIOE->OTYPER, 1UL << (pin), (mode) << (pin))
 #define		GPIOE_PIN_SPEED(pin, speed)			FORCE_BITS(GPIOE->OSPEEDR, 3UL << (2*(pin)), (speed) << (2*(pin)))
 #define		GPIOE_PIN_PULL(pin, pull)				FORCE_BITS(GPIOE->PUPDR, 3UL << (2*(pin)), (pull) << (2*(pin)))
 
-
-void GPIO_Init(void);
+// GPIO function prototypes
 void GPIO_CLOCK_ENABLE(volatile uint32_t port);
-void GPIOA_init(void);
-void GPIOB_init(void);
-void GPIOE_init(void);
+void GPIOA_Init(void);
+void GPIOE_Init(void);
 
 #endif
