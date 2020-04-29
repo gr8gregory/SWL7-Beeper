@@ -1,7 +1,17 @@
+/*****************************************************************************
+ * Timer.h
+ * Contains prototypes and macros to initialize a timer port
+ * Caleb Hoeksema, Gregory Huras
+ * April 2020
+ ****************************************************************************/
+
+
 #ifndef _TIMER_H
 #define _TIMER_H
+
 #include "SysClock.h"
 #include "stm32l476xx.h"
+
 
 // Counting direction
 #define 	COUNT_UP		0x00UL
@@ -21,9 +31,6 @@
 // Main O/P mode
 #define		OP_OF				0x0UL
 #define		OP_ON				TIM_BDTR_MOE
-
-// Pins
-#define		SERVO_PIN		8UL
 
 // Timer macros
 #define		COUNT_DIR(timer, dir)			FORCE_BITS((timer), 0x10UL, (dir))
