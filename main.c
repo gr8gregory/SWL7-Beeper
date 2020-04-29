@@ -1,44 +1,36 @@
-//-------------------------------------------------------------------
-// main.c - Initalize GPIO and USARTS to output a string to visualize on the scope
-//
-// Uses Zhu's SysClock code to init system clocks
-//
-// 
-// copyright zhu, Gregory Huras, Caleb Hoeksema
-//-------------------------------------------------------------------
+/*****************************************************************************
+ * main.c
+ * Mainline function to run an beeper from a keypad
+ * Caleb Hoeksema, Gregory Huras
+ * April 2020
+ ****************************************************************************/
 
-// header files
-#include "VirtualPort.h"
-#include "utils.h"
+
+#include "stm32l476xx.h"
+#include "SysClock.h"
 #include "GPIO.h"
-#include "Timer.h"
-#include "Keypad.h"
-#include "Beeper.h"
+#include "timer.h"
+#include "utils.h"
+#include "beep.h"
+#include "key.h"
 
-int main(void){
 
+// Mainline function for reading a keypad and playing a beeper
+int main(void) {
+	
+	// Initalize the System Clock, GPIO ports, Timer
 	System_Clock_Init();
-	VIRTUAL_PORT_INIT();
-	
-	// Initalize the Keypad Gpios
-	GPIO_Init();
-	
-	// Initalize PE8 timer
+	GPIOA_Init();
+	GPIOE_Init();
 	Timer_Init();
 	
-	uint32_t Freq = 0;
-	// Run loop continueously
+	uint8_t key = 0x10;			// Default error condition (0x10)
+	
+	// Loop Forever
 	while(1){
 		
-		
-		Freq = Keypad_scan();
-		if((Freq > 0) && (Freq < 0xFF)){
-			Beep(Freq);
-		}
-		else{
-			// Print F error
-		}
-		
+		key = getKey();				// returns a value from 0x0 - 0x10
+		beep(key);
+				
 	}
-	
-} //main()
+}
