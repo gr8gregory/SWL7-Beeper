@@ -1,8 +1,17 @@
+/*****************************************************************************
+ * GPIO.c
+ * Contains code to initialize a GPIO port
+ * Caleb Hoeksema, Gregory Huras
+ * April 2020
+ ****************************************************************************/
+
+
 #include "utils.h"
 #include "GPIO.h"
-/*https://conestoga.desire2learn.com/d2l/common/assets/pdfjs/1.0.0.30/web/viewer.html?file=%2Fcontent%2Fenforced%2F319416-SENG72005-104-20W-1_20W_X_B320_SENG72005_SEC1_X%2FSTM32L476VGT6%2520Reference%2520manual%2520(March%25202017).pdf%3Fd2lSessionVal%3DLLbhl5IMmoUOJElfXR9CD0yi5%26ou%3D319416&lang=en-us&container=d2l-fileviewer-rendered-pdf&fullscreen=d2l-fileviewer-rendered-pdf-dialog&height=937#page=292&zoom=auto,124,751
-Pg 300	
-*/
+#include "key.h"
+#include "beep.h"
+
+
 // Initalize the GPIO Clocks
 void GPIO_CLOCK_ENABLE(volatile uint32_t port){
 	
@@ -10,66 +19,90 @@ void GPIO_CLOCK_ENABLE(volatile uint32_t port){
 	RCC->AHB2ENR |= port;
 }
 
-void GPIO_Init(void){
-	GPIOA_init();
-	GPIOE_init();
-}
 
-void GPIOA_init(void){
-	// PA 1, 2, 3, 5 - KEYPAD INPUTS
+// Initialize GPIOE to run the keypad rows and beeper
+void GPIOE_Init(void){
 	
-	GPIO_CLOCK_ENABLE(PORT_A);
-
-	// Set pin as Digital Input (00)
-	CLR_BITS(GPIOA->MODER, GPIOA_MASK); //Clears PA 1, 2, 3, 5
-	
-	// Set pin as NO pull-up pull-down
-	CLR_BITS(GPIOA->PUPDR, GPIOA_MASK);
-	
-}
-
-void GPIOE_init(void){
-	
-	// PE 15, 14, 13, 12 - KEYPAD outputs
-	// PE 8 - TIMER MODULE
 	GPIO_CLOCK_ENABLE(PORT_E);
 	
-	/************ KEYPAD INIT ***************/
-	CLR_BITS(GPIOE->MODER, 0xFF << (2*12));
-	SET_BITS(GPIOE->MODER, 0x55 << (2*12));
+	// Set pin I/O mode (output for rows, timer for beeper)
+	GPIOE_PIN_MODE(ROW_1, MODER_OUT);
+	GPIOE_PIN_MODE(ROW_2, MODER_OUT);
+	GPIOE_PIN_MODE(ROW_3, MODER_OUT);
+	GPIOE_PIN_MODE(ROW_4, MODER_OUT);
 	
-	CLR_BITS(GPIOE->OTYPER, 0xF << (12));
-	SET_BITS(GPIOE->OTYPER, 0xF << (12));
+	GPIOE_PIN_MODE(BEEP_PIN, MODER_AF);
+	GPIOE->AFR[1] &= ~(0xFUL);
+	GPIOE->AFR[1] |= 1UL;
 	
-	CLR_BITS(GPIOE->OSPEEDR, 0xF << (2*12));
+	// Set output type (open drain to prevent shorts)
+	GPIOE_OP_TYPE(ROW_1, OPEN_DR);
+	GPIOE_OP_TYPE(ROW_2, OPEN_DR);
+	GPIOE_OP_TYPE(ROW_3, OPEN_DR);
+	GPIOE_OP_TYPE(ROW_4, OPEN_DR);
 	
-	CLR_BITS(GPIOE->PUPDR, 0xFF << (2*12));
-	/*****************************************/
+	// Set pull up (default high for row O/Ps)
+	GPIOE_PIN_PULL(ROW_1, PULL_UP);
+	GPIOE_PIN_PULL(ROW_2, PULL_UP);
+	GPIOE_PIN_PULL(ROW_3, PULL_UP);
+	GPIOE_PIN_PULL(ROW_4, PULL_UP);
 	
+	GPIOE_PIN_PULL(BEEP_PIN, PULL_NONE);
 	
-	/************* TMER PE8 ******************/
-	GPIOE->MODER = ~(3U<<(2*8));  
-	GPIOE->MODER |= 1U<<(2*8);      //  Output(01)
-	
-	// GPIO Speed: Low speed (00), Medium speed (01), Fast speed (10), High speed (11)
-	GPIOE->OSPEEDR &= ~(3U<<(2*8));
-	GPIOE->OSPEEDR |=   3U<<(2*8);  // High speed
-	
-	// GPIO Output Type: Output push-pull (0, reset), Output open drain (1) 
-	GPIOE->OTYPER &= ~(1U<<8);       // Push-pull
-	
-	// GPIO Push-Pull: No pull-up, pull-down (00), Pull-up (01), Pull-down (10), Reserved (11)
-	GPIOE->PUPDR   &= ~(3U<<(2*8));  // No pull-up, no pull-down
-	/****************************************/
+	// Set pin speed
+	GPIOE_PIN_SPEED(BEEP_PIN, LOW_SPEED);
 	
 }
-/*
-void GPIO_Init(GPIO_TypeDef * GPIOx){
+
+
+// Initialize GPIOA to run the keypad columns
+void GPIOA_Init(void) {
 	
 	GPIO_CLOCK_ENABLE(PORT_A);
 	
-	CLR_BITS(GPIOx->MODER, 0xFFC3U <<(8*2)); // Clear Bits to 0
-	SET_BITS(GPIOx->MODER, 0x5541U <<(8*2));	// Set the bits to General purpose output Mode (01)
-	CLR_BITS(GPIOx->OTYPER, 0xF9U <<(8));	// Set bits to Push-pull
+	// Set pin I/O mode (input for columns)
+	GPIOA_PIN_MODE(COL_1, MODER_IN);
+	GPIOA_PIN_MODE(COL_2, MODER_IN);
+	GPIOA_PIN_MODE(COL_3, MODER_IN);
+	GPIOA_PIN_MODE(COL_4, MODER_IN);
+	
+	// Set output type (open drain to prevent shorts)
+	GPIOA_OP_TYPE(COL_1, OPEN_DR);
+	GPIOA_OP_TYPE(COL_2, OPEN_DR);
+	GPIOA_OP_TYPE(COL_3, OPEN_DR);
+	GPIOA_OP_TYPE(COL_4, OPEN_DR);
+	
+	// Set pull up (external pull-up of 2.2k)
+	GPIOA_PIN_PULL(COL_1, PULL_NONE);
+	GPIOA_PIN_PULL(COL_2, PULL_NONE);
+	GPIOA_PIN_PULL(COL_3, PULL_NONE);
+	GPIOA_PIN_PULL(COL_4, PULL_NONE);
+	
+	// Set pin speed
+	GPIOA_PIN_SPEED(COL_1, FAST_SPEED);
+	GPIOA_PIN_SPEED(COL_2, FAST_SPEED);
+	GPIOA_PIN_SPEED(COL_3, FAST_SPEED);
+	GPIOA_PIN_SPEED(COL_4, FAST_SPEED);
+
 }
-*/
+
+
+// Delay function using milliseconds
+void Delay_ms(uint32_t msec){
+  
+  SysTick->CTRL = 0;            									// Disable SysTick
+  SysTick->LOAD = (80000000UL / 1000UL) * msec;   // Set reload register
+  SysTick->VAL = 0;             									// Reset the SysTick counter value
+																									// Select processor clock: 1 = processor clock; 0 = external clock
+  
+	SysTick->CTRL |= SysTick_CTRL_CLKSOURCE_Msk;		// Disable SysTick interrupt, 1 = Enable, 0 = Disable
+																									
+  SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;			// Enable SysTick
+																									
+  SysTick->CTRL |= SysTick_CTRL_ENABLE_Msk;				// Wait for timeout
+																									
+  while(!(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk));
+																									// Disable SysTick until next time
+  SysTick->CTRL = 0; 
+}
+
