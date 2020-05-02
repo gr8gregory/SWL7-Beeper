@@ -14,6 +14,7 @@
 #include "beep.h"
 #include "key.h"
 
+uint8_t flag = 0x10;
 
 // Mainline function for reading a keypad and playing a beeper
 int main(void) {
